@@ -1,0 +1,85 @@
+import { useEffect, useMemo, useState } from 'react';
+
+const normalizeListResponse = (payload) => {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (payload && Array.isArray(payload.results)) {
+    return payload.results;
+  }
+  return [];
+};
+
+function Workouts() {
+  const [workouts, setWorkouts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const workoutsEndpoint = useMemo(() => {
+    if (process.env.REACT_APP_CODESPACE_NAME) {
+      return `https://${process.env.REACT_APP_CODESPACE_NAME}-8000.app.github.dev/api/workouts/`;
+    }
+    return 'http://localhost:8000/api/workouts/';
+  }, []);
+
+  useEffect(() => {
+    const fetchWorkouts = async () => {
+      try {
+        console.log('Workouts endpoint:', workoutsEndpoint);
+        const response = await fetch(workoutsEndpoint);
+        if (!response.ok) {
+          throw new Error('Failed to load workouts data.');
+        }
+        const data = await response.json();
+        console.log('Workouts API response:', data);
+        setWorkouts(normalizeListResponse(data));
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchWorkouts();
+  }, [workoutsEndpoint]);
+
+  if (loading) {
+    return <p>Loading workouts...</p>;
+  }
+
+  if (error) {
+    return <p className="text-danger">{error}</p>;
+  }
+
+  return (
+    <div>
+      <h2 className="h4 mb-3">Workouts</h2>
+      <div className="table-responsive">
+        <table className="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>User Email</th>
+              <th>Workout</th>
+              <th>Intensity</th>
+              <th>Duration (min)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {workouts.map((workout) => (
+              <tr key={workout.id}>
+                <td>{workout.id}</td>
+                <td>{workout.user_email}</td>
+                <td>{workout.workout_name}</td>
+                <td>{workout.intensity}</td>
+                <td>{workout.duration_minutes}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default Workouts;
